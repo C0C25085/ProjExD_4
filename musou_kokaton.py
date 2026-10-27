@@ -232,7 +232,7 @@ class Score:
     def __init__(self):
         self.font = pg.font.Font(None, 50)
         self.color = (0, 0, 255)
-        self.value = 0
+        self.value = 60
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
         self.rect.center = 100, HEIGHT-50
@@ -240,6 +240,33 @@ class Score:
     def update(self, screen: pg.Surface):
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         screen.blit(self.image, self.rect)
+
+class Shield(pg.sprite.Sprite):
+    """
+      防御壁を作るクラス
+    """
+    def __init__(self, bird: Bird, life: int):
+        super().__init__()
+
+        self.image = pg.Surface((20, bird.rect.height * 2))#壁のでかさ
+        pg.draw.rect(self.image, (0, 0, 255), (0, 0, 20, bird.rect.height * 2))
+        vx,vy = bird.dire#こうかとんが今どこ向いてるか
+        houkou = math.degrees(math.atan2(-vy, vx))#360度検知
+        self.image.set_colorkey((0, 0, 0))#背景を透明化させる
+
+        self.image = pg.transform.rotozoom(self.image, houkou, 1.0)
+        self.image.set_colorkey((0, 0, 0))
+        self.rect = self.image.get_rect()
+
+        self.rect.centerx = bird.rect.centerx + vx * bird.rect.width
+        self.rect.centery = bird.rect.centery + vy * bird.rect.height
+
+        self.life =life
+
+    def update(self): 
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
 
 
 def main():
@@ -253,6 +280,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    shields =pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -263,6 +291,10 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
+            if event.type == pg.KEYDOWN and event.key == pg.K_s:
+                if score.value > 50 and len(shields) == 0:
+                    shields.add(Shield(bird, 400)) #発動時間
+                    score.value -= 50 #消費スコア
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -289,6 +321,11 @@ def main():
             time.sleep(2)
             return
 
+        for bomb in pg.sprite.groupcollide(bombs,shields, True, False).keys():
+            exps.add(Explosion(bomb, 50)) #爆発
+
+        shields.update()
+        shields.draw(screen)
         bird.update(key_lst, screen)
         beams.update()
         beams.draw(screen)
@@ -302,6 +339,9 @@ def main():
         pg.display.update()
         tmr += 1
         clock.tick(50)
+
+   
+
 
 
 if __name__ == "__main__":
