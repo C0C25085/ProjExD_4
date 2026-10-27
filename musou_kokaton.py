@@ -275,7 +275,6 @@ class Emp(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.life = 2.5
 
-        
         for emy in emys:
             emy.interval = float("inf")
             emy.image = pg.transform.laplacian(emy.image)
