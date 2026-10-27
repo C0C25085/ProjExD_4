@@ -241,6 +241,39 @@ class Score:
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         screen.blit(self.image, self.rect)
 
+class Life:
+    """
+    追加機能１：残機数（ライフ）
+    残機数が0になるまで死なない
+    初期残機数：3
+    """
+    def __init__(self, num: int):
+        self.num = num #空のSurface
+        self.image = pg.Surface((40, 40))
+        self.image.set_colorkey((0, 0, 0))#黒を透過する
+        points = [(16*math.sin(t/100)**3 +20, #赤色のハートをdrawする
+                    -(13*math.cos(t/100)-5*math.cos(2*t/100)-2*math.cos(3*t/100)-math.cos(4*t/100)) +20
+                    ) for t in range(0, 628) ]
+        pg.draw.polygon(self.image, (255, 0, 0), points)
+
+    def update(self, screen: pg.Surface): #updateメソッドで，ハートが描かれたsurfaceをnum個blit
+        for i in range(self.num):
+            x = (WIDTH - 50) - (i*40)
+            y = HEIGHT - 50
+            rect = self.image.get_rect(center=(x, y))
+            screen.blit(self.image, rect)
+
+
+        # pg.draw.polygon(self.heart_surf, (255, 0, 0), po
+        # def update(self, screen: pg.Surface):
+        # #一番右のライフの中心が右から50、下から50になるように
+        # base_x = WIDTH - 50 - 20
+        # base_y = HEIGHT - 50 - 20
+        # for i in range(self.num):
+        # screen.blit(self.heart_surf, (base_x - i * 4
+
+
+
 class Shield(pg.sprite.Sprite):
     """
       防御壁を作るクラス
@@ -284,6 +317,7 @@ def main():
 
     tmr = 0
     clock = pg.time.Clock()
+    life=Life(3) #初期残機(ライフ)数
     while True:
         key_lst = pg.key.get_pressed()
         for event in pg.event.get():
@@ -315,11 +349,13 @@ def main():
             score.value += 1  # 1点アップ
 
         for bomb in pg.sprite.spritecollide(bird, bombs, True):  # こうかとんと衝突した爆弾リスト
-            bird.change_img(8, screen)  # こうかとん悲しみエフェクト
-            score.update(screen)
-            pg.display.update()
-            time.sleep(2)
-            return
+            life.num -= 1  # 残機数(ライフ)を1減らす
+            if life.num <= 0:
+                bird.change_img(8, screen)  # こうかとん悲しみエフェクト
+                score.update(screen)
+                pg.display.update()
+                time.sleep(2)
+                return
 
         for bomb in pg.sprite.groupcollide(bombs,shields, True, False).keys():
             exps.add(Explosion(bomb, 50)) #爆発
@@ -336,6 +372,7 @@ def main():
         exps.update()
         exps.draw(screen)
         score.update(screen)
+        life.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
